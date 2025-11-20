@@ -42,7 +42,7 @@ func ErrorResponse(c *gin.Context, statusCode int, message string, err string) {
 func ValidationErrorResponse(c *gin.Context, err error) {
 	c.JSON(http.StatusBadRequest, Response{
 		Success: false,
-		Message: "Gagal memproses request, terdapat kesalahan pada data yang dikirimkan",
+		Message: "Field validation errors",
 		Error:   err.Error(),
 	})
 }

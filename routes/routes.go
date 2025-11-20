@@ -83,7 +83,7 @@ func SetupRoutes(cfg *config.Config, authController *controllers.AuthController,
 		html := `<!DOCTYPE html>
 <html>
 <head>
-    <title>Livotech Backend Service API Documentation</title>
+    <title>Livotech Backend Service Documentation</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script type="module" src="https://unpkg.com/rapidoc@9.3.4/dist/rapidoc-min.js"></script>
@@ -137,9 +137,9 @@ func SetupRoutes(cfg *config.Config, authController *controllers.AuthController,
         match-type="includes"
     >
         <div slot="overview">
-            <h2>Selamat datang di Livotech Backend Service</h2>
-            <p>Layanan backend manajemen pengguna yang komprehensif dengan autentikasi JWT dan kontrol akses berbasis role.</p>
-            <p><strong>Authentication:</strong> Endpoint ini menggunakan autentikasi token Bearer. Sertakan token JWT Anda di header Authorization dengan format: <code>Bearer access-token-anda</code></p>
+            <h2>Welcome to Livotech Backend Service</h2>
+            <p>Comprehensive backend service for Livotech platform with JWT authentication and role-based access control.</p>
+            <p><strong>Authentication:</strong> This endpoint uses Bearer token authentication. Include your JWT token in the Authorization header in the format: <code>Bearer your-access-token</code></p>
         </div>
     </rapi-doc>
 </body>
@@ -156,7 +156,7 @@ func SetupRoutes(cfg *config.Config, authController *controllers.AuthController,
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":    "ok",
-			"message":   "Livotech Backend Service berjalan dengan baik",
+			"message":   "Livotech Backend Service is running smoothly.",
 			"timestamp": time.Now().Format("02 January 2006 - 15:04:05"),
 		})
 	})

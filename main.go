@@ -13,33 +13,33 @@ import (
 
 // @title Livotech Backend Service
 // @version 2.0
-// @description Layanan backend manajemen pengguna yang komprehensif dengan autentikasi JWT dan kontrol akses berbasis role
+// @description Comprehensive backend service for Livotech platform with JWT authentication and role-based access control. Authentication: This endpoint uses Bearer token authentication. Include your JWT token in the Authorization header in the format: Bearer your-access-token
 // @contact.name Saya
 // @contact.email support@livotech.com
 // @BasePath /
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
-// @description Ketik "Bearer" diikuti oleh spasi dan token JWT.
+// @description Type "Bearer" followed by a space and the JWT.
 func main() {
-	log.Println("🚀 Memulai Livotech Backend Service...")
+	log.Println("🚀 Starting Livotech Backend Service...")
 
 	// Load configuration
-	log.Println("📝 Memuat konfigurasi...")
+	log.Println("📝 Loading configuration...")
 	cfg := config.LoadConfig()
-	log.Println("✓ Konfigurasi berhasil dimuat")
+	log.Println("✓ Configuration loaded successfully")
 
 	// Connect to database with retry logic
-	log.Println("🔌 Menghubungkan ke database...")
+	log.Println("🔌 Connecting to database...")
 	config.ConnectDatabase(cfg)
 
 	// Run migrations
-	log.Println("🔄 Menjalankan migrasi database...")
+	log.Println("🔄 Running database migrations...")
 	db := config.GetDB()
 	migrations.AutoMigrate(db) // No error handling needed, it's handled inside the function
 
 	// Initialize controllers
-	log.Println("🎮 Menginisialisasi controller...")
+	log.Println("🎮 Initializing controllers...")
 	authController := controllers.NewAuthController(db, cfg)
 	userManagerController := controllers.NewUserManagerController(db)
 	boxController := controllers.NewBoxController(db)
@@ -47,12 +47,12 @@ func main() {
 	expeditionController := controllers.NewExpeditionController(db)
 	storeController := controllers.NewStoreController(db)
 	orderController := controllers.NewOrderController(db)
-	log.Println("✓ Berhasil memuat controller")
+	log.Println("✓ Controllers initialized successfully")
 
 	// Setup routes
-	log.Println("🛣️  Menyiapkan rute...")
+	log.Println("🛣️  Setting up routes...")
 	router := routes.SetupRoutes(cfg, authController, userManagerController, boxController, channelController, expeditionController, storeController, orderController)
-	log.Println("✓ Rute berhasil dikonfigurasi")
+	log.Println("✓ Routes configured successfully")
 
 	// Build API URL from config
 	apiURL := fmt.Sprintf("http://%s:%s", cfg.APIHost, cfg.Port)
@@ -66,6 +66,6 @@ func main() {
 	log.Println("════════════════════════════════════════════════════════════")
 
 	if err := router.Run(":" + cfg.Port); err != nil {
-		log.Fatal("❌ Gagal memulai server:", err)
+		log.Fatal("❌ Server Initialization Failed:", err)
 	}
 }
