@@ -278,7 +278,7 @@ func seedSuperadminUser(db *gorm.DB) {
 
 	// Find superadmin role
 	var superadminRole models.Role
-	if err := db.Where("name = ?", "superadmin").First(&superadminRole).Error; err != nil {
+	if err := db.Where("role = ?", "superadmin").First(&superadminRole).Error; err != nil {
 		log.Printf("Role superadmin tidak ditemukan: %v", err)
 		return
 	}
