@@ -8,6 +8,70 @@ definitions:
     required:
     - role_name
     type: object
+  controllers.BoxesListResponse:
+    properties:
+      boxes:
+        items:
+          $ref: '#/definitions/models.BoxResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/utils.PaginationResponse'
+    type: object
+  controllers.ChannelsListResponse:
+    properties:
+      channels:
+        items:
+          $ref: '#/definitions/models.ChannelResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/utils.PaginationResponse'
+    type: object
+  controllers.CreateBoxRequest:
+    properties:
+      code:
+        type: string
+      name:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  controllers.CreateChannelRequest:
+    properties:
+      code:
+        type: string
+      name:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  controllers.CreateExpeditionRequest:
+    properties:
+      code:
+        type: string
+      color:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    required:
+    - code
+    - color
+    - name
+    - slug
+    type: object
+  controllers.CreateStoreRequest:
+    properties:
+      code:
+        type: string
+      name:
+        type: string
+    required:
+    - code
+    - name
+    type: object
   controllers.CreateUserRequest:
     properties:
       email:
@@ -36,6 +100,15 @@ definitions:
     - name
     - password
     - username
+    type: object
+  controllers.ExpeditionsListResponse:
+    properties:
+      expeditions:
+        items:
+          $ref: '#/definitions/models.ExpeditionResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/utils.PaginationResponse'
     type: object
   controllers.LoginRequest:
     properties:
@@ -96,6 +169,61 @@ definitions:
     required:
     - role_name
     type: object
+  controllers.StoresListResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/utils.PaginationResponse'
+      stores:
+        items:
+          $ref: '#/definitions/models.StoreResponse'
+        type: array
+    type: object
+  controllers.UpdateBoxRequest:
+    properties:
+      code:
+        type: string
+      name:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  controllers.UpdateChannelRequest:
+    properties:
+      code:
+        type: string
+      name:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  controllers.UpdateExpeditionRequest:
+    properties:
+      code:
+        type: string
+      color:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    required:
+    - code
+    - color
+    - name
+    - slug
+    type: object
+  controllers.UpdateStoreRequest:
+    properties:
+      code:
+        type: string
+      name:
+        type: string
+    required:
+    - code
+    - name
+    type: object
   controllers.UpdateUserPasswordRequest:
     properties:
       new_password:
@@ -130,6 +258,49 @@ definitions:
           $ref: '#/definitions/models.UserResponse'
         type: array
     type: object
+  models.BoxResponse:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.ChannelResponse:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.ExpeditionResponse:
+    properties:
+      code:
+        type: string
+      color:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
   models.Role:
     properties:
       created_at:
@@ -154,6 +325,19 @@ definitions:
       id:
         type: integer
       role:
+        type: string
+    type: object
+  models.StoreResponse:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
         type: string
     type: object
   models.UserResponse:
@@ -331,6 +515,838 @@ paths:
       summary: Register user
       tags:
       - auth
+  /api/boxes:
+    get:
+      consumes:
+      - application/json
+      description: Mengambil data semua box dengan pagination dan pencarian.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search by box code (partial match)
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controllers.BoxesListResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all boxes
+      tags:
+      - boxes
+    post:
+      consumes:
+      - application/json
+      description: Membuat box baru.
+      parameters:
+      - description: Create box request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateBoxRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.BoxResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new box
+      tags:
+      - boxes
+  /api/boxes/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus data box.
+      parameters:
+      - description: Box ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove box
+      tags:
+      - boxes
+    get:
+      consumes:
+      - application/json
+      description: Mengambil data box berdasarkan ID.
+      parameters:
+      - description: Box ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.BoxResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get box by ID
+      tags:
+      - boxes
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi box.
+      parameters:
+      - description: Box ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update box request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateBoxRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.BoxResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Update box
+      tags:
+      - boxes
+  /api/channels:
+    get:
+      consumes:
+      - application/json
+      description: Mengambil data semua channel dengan pagination dan pencarian.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search by Code or Name (partial match)
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controllers.ChannelsListResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all channels
+      tags:
+      - channels
+    post:
+      consumes:
+      - application/json
+      description: Membuat channel baru.
+      parameters:
+      - description: Create channel request
+        in: body
+        name: channel
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ChannelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new channel
+      tags:
+      - channels
+  /api/channels/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus channel secara soft delete.
+      parameters:
+      - description: Channel ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove channel
+      tags:
+      - channels
+    get:
+      consumes:
+      - application/json
+      description: Mengambil data channel spesifik berdasarkan ID.
+      parameters:
+      - description: Channel ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ChannelResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get channel by ID
+      tags:
+      - channels
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi channel spesifik.
+      parameters:
+      - description: Channel ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update channel request
+        in: body
+        name: channel
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ChannelResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Update channel
+      tags:
+      - channels
+  /api/expeditions:
+    get:
+      consumes:
+      - application/json
+      description: Mengambil data semua expedition dengan pagination dan pencarian.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search by Code or Name (partial match)
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controllers.ExpeditionsListResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all expeditions
+      tags:
+      - expeditions
+    post:
+      consumes:
+      - application/json
+      description: Membuat expedition baru.
+      parameters:
+      - description: Create expedition request
+        in: body
+        name: expedition
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateExpeditionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ExpeditionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new expedition
+      tags:
+      - expeditions
+  /api/expeditions/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus data expedition.
+      parameters:
+      - description: Expedition ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove expedition
+      tags:
+      - expeditions
+    get:
+      consumes:
+      - application/json
+      description: Mengambil detail expedition berdasarkan ID.
+      parameters:
+      - description: Expedition ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ExpeditionResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get expedition by ID
+      tags:
+      - expeditions
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui data expedition.
+      parameters:
+      - description: Expedition ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Expedition data
+        in: body
+        name: expedition
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateExpeditionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ExpeditionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Update expedition
+      tags:
+      - expeditions
+  /api/stores:
+    get:
+      consumes:
+      - application/json
+      description: Mengambil data semua store dengan pagination dan pencarian.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search by Code or Name (partial match)
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controllers.StoresListResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all stores
+      tags:
+      - stores
+    post:
+      consumes:
+      - application/json
+      description: Membuat store baru.
+      parameters:
+      - description: Create Store Request
+        in: body
+        name: store
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateStoreRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.StoreResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new store
+      tags:
+      - stores
+  /api/stores/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus data store.
+      parameters:
+      - description: Store ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove store
+      tags:
+      - stores
+    get:
+      consumes:
+      - application/json
+      description: Mengambil data store spesifik berdasarkan ID.
+      parameters:
+      - description: Store ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.StoreResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get store by ID
+      tags:
+      - stores
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui data store.
+      parameters:
+      - description: Store ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Store Request
+        in: body
+        name: store
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateStoreRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.StoreResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Update store
+      tags:
+      - stores
   /api/user-manager/roles:
     get:
       consumes:
