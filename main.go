@@ -14,7 +14,7 @@ import (
 // @title Livotech Backend Service
 // @version 2.0
 // @description Layanan backend manajemen pengguna yang komprehensif dengan autentikasi JWT dan kontrol akses berbasis role
-// @contact.name Saya Livotech Support
+// @contact.name Saya
 // @contact.email support@livotech.com
 // @BasePath /
 // @securityDefinitions.apikey BearerAuth
@@ -41,11 +41,12 @@ func main() {
 	// Initialize controllers
 	log.Println("🎮 Menginisialisasi controller...")
 	authController := controllers.NewAuthController(db, cfg)
+	userManagerController := controllers.NewUserManagerController(db)
 	log.Println("✓ Berhasil memuat controller")
 
 	// Setup routes
 	log.Println("🛣️  Menyiapkan rute...")
-	router := routes.SetupRoutes(cfg, authController)
+	router := routes.SetupRoutes(cfg, authController, userManagerController)
 	log.Println("✓ Rute berhasil dikonfigurasi")
 
 	// Build API URL from config

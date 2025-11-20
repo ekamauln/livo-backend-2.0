@@ -51,7 +51,7 @@ func NewAuthController(db *gorm.DB, config *config.Config) *AuthController {
 }
 
 // Register godoc
-// @Summary Pendaftaran pengguna baru
+// @Summary Register user
 // @Description Mendaftarkan akun pengguna baru
 // @Tags auth
 // @Accept json
@@ -184,7 +184,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 }
 
 // RefreshToken godoc
-// @Summary Memperbarui access token
+// @Summary Refresh access token
 // @Description Memperbarui access token baru menggunakan token refresh
 // @Tags auth
 // @Accept json

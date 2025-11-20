@@ -1,5 +1,42 @@
 basePath: /
 definitions:
+  controllers.AssignRoleRequest:
+    properties:
+      role_name:
+        example: manager
+        type: string
+    required:
+    - role_name
+    type: object
+  controllers.CreateUserRequest:
+    properties:
+      email:
+        example: budi@example.com
+        type: string
+      initial_role:
+        example: picker
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      name:
+        example: Budi Santoso
+        type: string
+      password:
+        example: password123
+        minLength: 6
+        type: string
+      username:
+        example: budi
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - name
+    - password
+    - username
+    type: object
   controllers.LoginRequest:
     properties:
       password:
@@ -51,6 +88,61 @@ definitions:
     - password
     - username
     type: object
+  controllers.RemoveRoleRequest:
+    properties:
+      role_name:
+        example: manager
+        type: string
+    required:
+    - role_name
+    type: object
+  controllers.UpdateUserPasswordRequest:
+    properties:
+      new_password:
+        example: newpassword123
+        minLength: 6
+        type: string
+    required:
+    - new_password
+    type: object
+  controllers.UpdateUserProfileRequest:
+    properties:
+      email:
+        example: newemail@example.com
+        type: string
+      name:
+        example: Budi Santoso Updated
+        minLength: 1
+        type: string
+    type: object
+  controllers.UpdateUserStatusRequest:
+    properties:
+      is_active:
+        example: true
+        type: boolean
+    type: object
+  controllers.UsersListResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/utils.PaginationResponse'
+      users:
+        items:
+          $ref: '#/definitions/models.UserResponse'
+        type: array
+    type: object
+  models.Role:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      role:
+        type: string
+      updated_at:
+        type: string
+    type: object
   models.RoleResponse:
     properties:
       assigned_at:
@@ -85,6 +177,15 @@ definitions:
       username:
         type: string
     type: object
+  utils.PaginationResponse:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
   utils.Response:
     properties:
       data: {}
@@ -98,7 +199,7 @@ definitions:
 info:
   contact:
     email: support@livotech.com
-    name: Saya Livotech Support
+    name: Saya
   description: Layanan backend manajemen pengguna yang komprehensif dengan autentikasi
     JWT dan kontrol akses berbasis role
   title: Livotech Backend Service
@@ -192,7 +293,7 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/utils.Response'
-      summary: Memperbarui access token
+      summary: Refresh access token
       tags:
       - auth
   /api/auth/register:
@@ -227,9 +328,468 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/utils.Response'
-      summary: Pendaftaran pengguna baru
+      summary: Register user
       tags:
       - auth
+  /api/user-manager/roles:
+    get:
+      consumes:
+      - application/json
+      description: Mengambil data semua role yang tersedia. (hanya coordinator yang
+        dapat mengakses)
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Role'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all roles
+      tags:
+      - user-manager
+  /api/user-manager/users:
+    get:
+      consumes:
+      - application/json
+      description: Mengambil daftar semua user dengan kemampuan pencarian opsional
+        berdasarkan username atau nama.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Pencarian berdasarkan username atau nama
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controllers.UsersListResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all users
+      tags:
+      - user-manager
+    post:
+      consumes:
+      - application/json
+      description: Membuat akun baru untuk user (hanya coordinator yang dapat mengakses)
+      parameters:
+      - description: Create user request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new user
+      tags:
+      - user-manager
+  /api/user-manager/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus akun user. (hanya coordinator yang dapat mengakses)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove user account
+      tags:
+      - user-manager
+    get:
+      consumes:
+      - application/json
+      description: Mengambil informasi user spesifik berdasarkan ID user.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - user-manager
+  /api/user-manager/users/{id}/password:
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui kata sandi user (hanya coordinator yang dapat mengakses)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update password request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateUserPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user password
+      tags:
+      - user-manager
+  /api/user-manager/users/{id}/profile:
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui nama lengkap dan email user (hanya coordinator yang
+        dapat mengakses)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update profile request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateUserProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - user-manager
+  /api/user-manager/users/{id}/roles:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus peran role dari user (hanya coordinator yang dapat mengakses)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Remove role request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.RemoveRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove role from user
+      tags:
+      - user-manager
+    post:
+      consumes:
+      - application/json
+      description: Menugaskan peran role ke user (hanya coordinator yang dapat mengakses)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Assign role request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.AssignRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Assign role to user
+      tags:
+      - user-manager
+  /api/user-manager/users/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Mengaktifkan atau menonaktifkan status user. (hanya coordinator
+        yang dapat mengakses)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update status request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateUserStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user status (active/inactive)
+      tags:
+      - user-manager
 securityDefinitions:
   BearerAuth:
     description: Ketik "Bearer" diikuti oleh spasi dan token JWT.
