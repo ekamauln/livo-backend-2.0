@@ -8,7 +8,7 @@ import (
 
 type Box struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
-	Code      string         `gorm:"size:4;not null;unique;check:code_len_check,length(code) >= 2" json:"code"`
+	Code      string         `gorm:"size:4;not null;unique;check:code_len_check,length(code) >= 1" json:"code"`
 	Name      string         `gorm:"not null" json:"name"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
