@@ -52,7 +52,7 @@ func NewAuthController(db *gorm.DB, config *config.Config) *AuthController {
 
 // Register godoc
 // @Summary Register user
-// @Description Mendaftarkan akun pengguna baru
+// @Description Register a new user
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -71,14 +71,14 @@ func (ac *AuthController) Register(c *gin.Context) {
 	// Check if user already exists
 	var existingUser models.User
 	if err := ac.DB.Where("username = ? OR email = ?", req.Username, req.Email).First(&existingUser).Error; err == nil {
-		utils.ErrorResponse(c, http.StatusConflict, "Username atau email sudah digunakan", "username atau email tersebut sudah digunakan")
+		utils.ErrorResponse(c, http.StatusConflict, "Username or email already in use", "username or email already in use")
 		return
 	}
 
 	// Hash password
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal mengenkripsi password", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to hash password", err.Error())
 		return
 	}
 
@@ -92,7 +92,7 @@ func (ac *AuthController) Register(c *gin.Context) {
 	}
 
 	if err := ac.DB.Create(&user).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal membuat pengguna", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", err.Error())
 		return
 	}
 
@@ -110,12 +110,12 @@ func (ac *AuthController) Register(c *gin.Context) {
 	// Load user with roles
 	ac.DB.Preload("UserRoles.Role").First(&user, user.ID)
 
-	utils.SuccessResponse(c, http.StatusCreated, "Pengguna berhasil didaftarkan", user.ToUserResponse())
+	utils.SuccessResponse(c, http.StatusCreated, "User registered successfully", user.ToUserResponse())
 }
 
 // Login godoc
 // @Summary Login user
-// @Description Mengautentikasi pengguna dan mengembalikan token JWT
+// @Description Login a user and return access and refresh tokens
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -134,19 +134,19 @@ func (ac *AuthController) Login(c *gin.Context) {
 	// Find user
 	var user models.User
 	if err := ac.DB.Preload("UserRoles.Role").Where("username = ?", req.Username).First(&user).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Username salah", "user tidak ditemukan")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Incorrect username", "user not found")
 		return
 	}
 
 	// Check password
 	if !utils.CheckPasswordHash(req.Password, user.Password) {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Password salah", "password salah")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Incorrect password", "incorrect password")
 		return
 	}
 
 	// Check if user is active
 	if !user.IsActive {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Akun tidak aktif", "akun pengguna dinonaktifkan")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Account is inactive", "user account is deactivated")
 		return
 	}
 
@@ -166,7 +166,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 		ac.Config.RefreshTokenExpireDays,
 	)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghasilkan token", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to generate tokens", err.Error())
 		return
 	}
 
@@ -180,12 +180,12 @@ func (ac *AuthController) Login(c *gin.Context) {
 		User:         user.ToUserResponse(),
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Login sukses", response)
+	utils.SuccessResponse(c, http.StatusOK, "Login successful", response)
 }
 
 // RefreshToken godoc
 // @Summary Refresh access token
-// @Description Memperbarui access token baru menggunakan token refresh
+// @Description Refresh access token using refresh token
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -204,14 +204,14 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 	// Validate refresh token
 	claims, err := utils.ValidateRefreshToken(req.RefreshToken, ac.Config.JWTSecret)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Refresh token salah", err.Error())
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid refresh token", err.Error())
 		return
 	}
 
 	// Find user
 	var user models.User
 	if err := ac.DB.Preload("UserRoles.Role").Preload("UserRoles.Assigner").Where("id = ? AND refresh_token = ?", claims.UserID, req.RefreshToken).First(&user).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Refresh token salah", "refresh token tidak ditemukan untuk pengguna ini")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Invalid refresh token", "refresh token not found for this user")
 		return
 	}
 
@@ -231,7 +231,7 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		ac.Config.RefreshTokenExpireDays,
 	)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghasilkan access token", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to generate access token", err.Error())
 		return
 	}
 
@@ -245,12 +245,12 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		User:         user.ToUserResponse(),
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Token berhasil diperbarui", response)
+	utils.SuccessResponse(c, http.StatusOK, "Token refreshed successfully", response)
 }
 
 // Logout godoc
 // @Summary Logout user
-// @Description Logout user dengan menonaktifkan refresh token
+// @Description Logout user by invalidating the refresh token
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -263,9 +263,9 @@ func (ac *AuthController) Logout(c *gin.Context) {
 
 	// Clear refresh token
 	if err := ac.DB.Model(&models.User{}).Where("id = ?", userID).Update("refresh_token", "").Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal logout", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to logout", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Logout sukses", nil)
+	utils.SuccessResponse(c, http.StatusOK, "Logout successful", nil)
 }

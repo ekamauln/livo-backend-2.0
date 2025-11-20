@@ -23,7 +23,7 @@ func NewExpeditionController(db *gorm.DB) *ExpeditionController {
 
 // GetExpeditions godoc
 // @Summary Get all expeditions
-// @Description Mengambil data semua expedition dengan pagination dan pencarian.
+// @Description Get all expeditions with pagination and optional search.
 // @Tags expeditions
 // @Accept json
 // @Produce json
@@ -57,13 +57,13 @@ func (ec *ExpeditionController) GetExpeditions(c *gin.Context) {
 
 	// Get total count with search filter
 	if err := query.Count(&total).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghitung jumlah expeditions", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to count expeditions", err.Error())
 		return
 	}
 
 	// Get expeditions with pagination, search filter, and order by ID ascending
 	if err := query.Order("id ASC").Limit(limit).Offset(offset).Find(&expeditions).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal mengambil data expeditions", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve expeditions", err.Error())
 		return
 	}
 
@@ -83,9 +83,9 @@ func (ec *ExpeditionController) GetExpeditions(c *gin.Context) {
 	}
 
 	// Build success message
-	message := "Expeditions berhasil diambil"
+	message := "Expeditions retrieved successfully"
 	if search != "" {
-		message += " (difilter berdasarkan kode atau nama: " + search + ")"
+		message += " (filtered by code or name: " + search + ")"
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, message, response)
@@ -93,7 +93,7 @@ func (ec *ExpeditionController) GetExpeditions(c *gin.Context) {
 
 // GetExpedition godoc
 // @Summary Get expedition by ID
-// @Description Mengambil detail expedition berdasarkan ID.
+// @Description Get expedition details by ID.
 // @Tags expeditions
 // @Accept json
 // @Produce json
@@ -109,16 +109,16 @@ func (ec *ExpeditionController) GetExpedition(c *gin.Context) {
 
 	var expedition models.Expedition
 	if err := ec.DB.First(&expedition, expeditionID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Expedition tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Expedition not found", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Expedition berhasil diambil", expedition.ToExpeditionResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Expedition retrieved successfully", expedition.ToExpeditionResponse())
 }
 
 // UpdateExpedition godoc
 // @Summary Update expedition
-// @Description Memperbarui data expedition.
+// @Description Update expedition data.
 // @Tags expeditions
 // @Accept json
 // @Produce json
@@ -142,14 +142,14 @@ func (ec *ExpeditionController) UpdateExpedition(c *gin.Context) {
 
 	var expedition models.Expedition
 	if err := ec.DB.First(&expedition, expeditionID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Expedition tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Expedition not found", err.Error())
 		return
 	}
 
 	// Check for duplicate code (excluding current expedition)
 	var existingExpedition models.Expedition
 	if err := ec.DB.Where("code = ? AND id != ?", req.Code, expedition.ID).First(&existingExpedition).Error; err == nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Kode expedition sudah ada", "Expedition dengan kode ini sudah ada")
+		utils.ErrorResponse(c, http.StatusBadRequest, "Expedition code already exists", "An expedition with this code already exists")
 		return
 	}
 
@@ -160,16 +160,16 @@ func (ec *ExpeditionController) UpdateExpedition(c *gin.Context) {
 	expedition.Slug = req.Slug
 
 	if err := ec.DB.Save(&expedition).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal memperbarui expedition", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update expedition", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Expedition berhasil diperbarui", expedition.ToExpeditionResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Expedition updated successfully", expedition.ToExpeditionResponse())
 }
 
 // RemoveExpedition godoc
 // @Summary Remove expedition
-// @Description Menghapus data expedition.
+// @Description Remove expedition data by ID.
 // @Tags expeditions
 // @Accept json
 // @Produce json
@@ -185,21 +185,21 @@ func (ec *ExpeditionController) RemoveExpedition(c *gin.Context) {
 
 	var expedition models.Expedition
 	if err := ec.DB.First(&expedition, expeditionID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Expedition tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Expedition not found", err.Error())
 		return
 	}
 
 	if err := ec.DB.Delete(&expedition).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghapus expedition", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete expedition", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Expedition berhasil dihapus", nil)
+	utils.SuccessResponse(c, http.StatusOK, "Expedition deleted successfully", nil)
 }
 
 // CreateExpedition godoc
 // @Summary Create new expedition
-// @Description Membuat expedition baru.
+// @Description Create a new expedition.
 // @Tags expeditions
 // @Accept json
 // @Produce json
@@ -233,17 +233,17 @@ func (ec *ExpeditionController) CreateExpedition(c *gin.Context) {
 	// Check for duplicate expedition code
 	var existingExpedition models.Expedition
 	if err := ec.DB.Where("code = ?", req.Code).First(&existingExpedition).Error; err == nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Kode expedition sudah ada", "Expedition dengan kode ini sudah ada")
+		utils.ErrorResponse(c, http.StatusBadRequest, "Expedition code already exists", "An expedition with this code already exists")
 		return
 	}
 
 	// Create a new expedition and return the response
 	if err := ec.DB.Create(&expedition).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal membuat expedition", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create expedition", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusCreated, "Expedition berhasil dibuat", expedition.ToExpeditionResponse())
+	utils.SuccessResponse(c, http.StatusCreated, "Expedition created successfully", expedition.ToExpeditionResponse())
 }
 
 // Request/Response structs

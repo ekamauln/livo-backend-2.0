@@ -23,7 +23,7 @@ func NewStoreController(db *gorm.DB) *StoreController {
 
 // GetStores godoc
 // @Summary Get all stores
-// @Description Mengambil data semua store dengan pagination dan pencarian.
+// @Description Get all stores with pagination and optional search.
 // @Tags stores
 // @Accept json
 // @Produce json
@@ -57,13 +57,13 @@ func (sc *StoreController) GetStores(c *gin.Context) {
 
 	// Get total count with search filter
 	if err := query.Count(&total).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghitung jumlah stores", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to count stores", err.Error())
 		return
 	}
 
 	// Get stores with pagination, search filter, and order by ID ascending
 	if err := query.Order("id ASC").Limit(limit).Offset(offset).Find(&stores).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal mengambil data stores", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve stores", err.Error())
 		return
 	}
 
@@ -83,9 +83,9 @@ func (sc *StoreController) GetStores(c *gin.Context) {
 	}
 
 	// Build success message
-	message := "Stores berhasil diambil"
+	message := "Stores retrieved successfully"
 	if search != "" {
-		message += " (difilter berdasarkan kode atau nama: " + search + ")"
+		message += " (filtered by code or name: " + search + ")"
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, message, response)
@@ -93,7 +93,7 @@ func (sc *StoreController) GetStores(c *gin.Context) {
 
 // GetStore godoc
 // @Summary Get store by ID
-// @Description Mengambil data store spesifik berdasarkan ID.
+// @Description Get store details by ID.
 // @Tags stores
 // @Accept json
 // @Produce json
@@ -109,16 +109,16 @@ func (sc *StoreController) GetStore(c *gin.Context) {
 
 	var store models.Store
 	if err := sc.DB.First(&store, storeID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Store tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Store not found", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Store berhasil diambil", store.ToStoreResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Store retrieved successfully", store.ToStoreResponse())
 }
 
 // UpdateStore godoc
 // @Summary Update store
-// @Description Memperbarui data store.
+// @Description Update store data.
 // @Tags stores
 // @Accept json
 // @Produce json
@@ -142,14 +142,14 @@ func (sc *StoreController) UpdateStore(c *gin.Context) {
 
 	var store models.Store
 	if err := sc.DB.First(&store, storeID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Store tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Store not found", err.Error())
 		return
 	}
 
 	// Check for duplicate store code (excluding current store)
 	var existingStore models.Store
 	if err := sc.DB.Where("code = ? AND id <> ?", req.Code, store.ID).First(&existingStore).Error; err == nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Kode store sudah ada", "Store dengan kode ini sudah ada")
+		utils.ErrorResponse(c, http.StatusBadRequest, "Store code already exists", "A store with this code already exists")
 		return
 	}
 
@@ -158,16 +158,16 @@ func (sc *StoreController) UpdateStore(c *gin.Context) {
 	store.Name = req.Name
 
 	if err := sc.DB.Save(&store).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal memperbarui store", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update store", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Store berhasil diperbarui", store.ToStoreResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Store updated successfully", store.ToStoreResponse())
 }
 
 // RemoveStore godoc
 // @Summary Remove store
-// @Description Menghapus data store.
+// @Description Remove store data by ID.
 // @Tags stores
 // @Accept json
 // @Produce json
@@ -183,21 +183,21 @@ func (sc *StoreController) RemoveStore(c *gin.Context) {
 
 	var store models.Store
 	if err := sc.DB.First(&store, storeID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Store tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Store not found", err.Error())
 		return
 	}
 
 	if err := sc.DB.Delete(&store).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghapus store", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete store", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Store berhasil dihapus", nil)
+	utils.SuccessResponse(c, http.StatusOK, "Store deleted successfully", nil)
 }
 
 // CreateStore godoc
 // @Summary Create new store
-// @Description Membuat store baru.
+// @Description Create a new store.
 // @Tags stores
 // @Accept json
 // @Produce json
@@ -225,17 +225,17 @@ func (sc *StoreController) CreateStore(c *gin.Context) {
 	// Check for duplicate store code
 	var existingStore models.Store
 	if err := sc.DB.Where("code = ?", req.Code).First(&existingStore).Error; err == nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Kode store sudah ada", "Store dengan kode ini sudah ada")
+		utils.ErrorResponse(c, http.StatusBadRequest, "Store code already exists", "A store with this code already exists")
 		return
 	}
 
 	// Create new store and return response
 	if err := sc.DB.Create(&store).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal membuat store", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create store", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusCreated, "Store berhasil dibuat", store.ToStoreResponse())
+	utils.SuccessResponse(c, http.StatusCreated, "Store created successfully", store.ToStoreResponse())
 }
 
 // Request/Response structs

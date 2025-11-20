@@ -23,7 +23,7 @@ func NewChannelController(db *gorm.DB) *ChannelController {
 
 // GetChannels godoc
 // @Summary Get all channels
-// @Description Mengambil data semua channel dengan pagination dan pencarian.
+// @Description Get all channels with pagination and optional search.
 // @Tags channels
 // @Accept json
 // @Produce json
@@ -57,13 +57,13 @@ func (cc *ChannelController) GetChannels(c *gin.Context) {
 
 	// Get total count with search filter
 	if err := query.Count(&total).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghitung jumlah channel", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to count channels", err.Error())
 		return
 	}
 
 	// Get channels with pagination, search filter, and order by ID ascending
 	if err := query.Order("id ASC").Limit(limit).Offset(offset).Find(&channels).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal mengambil data channel", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve channels", err.Error())
 		return
 	}
 
@@ -83,9 +83,9 @@ func (cc *ChannelController) GetChannels(c *gin.Context) {
 	}
 
 	// Build success message
-	message := "Channels berhasil diambil"
+	message := "Channels retrieved successfully"
 	if search != "" {
-		message += " (difilter berdasarkan kode atau nama: " + search + ")"
+		message += " (filtered by code or name: " + search + ")"
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, message, response)
@@ -93,7 +93,7 @@ func (cc *ChannelController) GetChannels(c *gin.Context) {
 
 // GetChannel godoc
 // @Summary Get channel by ID
-// @Description Mengambil data channel spesifik berdasarkan ID.
+// @Description Get channel by ID.
 // @Tags channels
 // @Accept json
 // @Produce json
@@ -109,16 +109,16 @@ func (cc *ChannelController) GetChannel(c *gin.Context) {
 
 	var channel models.Channel
 	if err := cc.DB.First(&channel, channelID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Channel tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Channel not found", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Channel berhasil diambil", channel.ToChannelResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Channel retrieved successfully", channel.ToChannelResponse())
 }
 
 // UpdateChannel godoc
 // @Summary Update channel
-// @Description Memperbarui informasi channel spesifik.
+// @Description Update specific channel information.
 // @Tags channels
 // @Accept json
 // @Produce json
@@ -142,14 +142,14 @@ func (cc *ChannelController) UpdateChannel(c *gin.Context) {
 
 	var channel models.Channel
 	if err := cc.DB.First(&channel, channelID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Channel tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Channel not found", err.Error())
 		return
 	}
 
 	// Check for duplicate channel code (excluding current channel)
 	var existingChannel models.Channel
 	if err := cc.DB.Where("code = ? AND id <> ?", req.Code, channelID).First(&existingChannel).Error; err == nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Kode channel sudah ada", "Channel dengan kode ini sudah ada")
+		utils.ErrorResponse(c, http.StatusBadRequest, "Channel code already exists", "A channel with this code already exists")
 		return
 	}
 
@@ -158,16 +158,16 @@ func (cc *ChannelController) UpdateChannel(c *gin.Context) {
 	channel.Name = req.Name
 
 	if err := cc.DB.Save(&channel).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal memperbarui channel", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update channel", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Channel berhasil diperbarui", channel.ToChannelResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Channel updated successfully", channel.ToChannelResponse())
 }
 
 // RemoveChannel godoc
 // @Summary Remove channel
-// @Description Menghapus channel secara soft delete.
+// @Description Remove channel by ID.
 // @Tags channels
 // @Accept json
 // @Produce json
@@ -183,21 +183,21 @@ func (cc *ChannelController) RemoveChannel(c *gin.Context) {
 
 	var channel models.Channel
 	if err := cc.DB.First(&channel, channelID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Channel tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Channel not found", err.Error())
 		return
 	}
 
 	if err := cc.DB.Delete(&channel).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghapus channel", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete channel", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Channel berhasil dihapus", nil)
+	utils.SuccessResponse(c, http.StatusOK, "Channel deleted successfully", nil)
 }
 
 // CreateChannel godoc
 // @Summary Create new channel
-// @Description Membuat channel baru.
+// @Description Create a new channel.
 // @Tags channels
 // @Accept json
 // @Produce json
@@ -226,17 +226,17 @@ func (cc *ChannelController) CreateChannel(c *gin.Context) {
 	// Check for duplicate channel code
 	var existingChannel models.Channel
 	if err := cc.DB.Where("code = ?", req.Code).First(&existingChannel).Error; err == nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Kode channel sudah ada", "Channel dengan kode ini sudah ada")
+		utils.ErrorResponse(c, http.StatusBadRequest, "Channel code already exists", "A channel with this code already exists")
 		return
 	}
 
 	// Create a new channel and return the response
 	if err := cc.DB.Create(&channel).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal membuat channel", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create channel", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusCreated, "Channel berhasil dibuat", channel.ToChannelResponse())
+	utils.SuccessResponse(c, http.StatusCreated, "Channel created successfully", channel.ToChannelResponse())
 }
 
 // Request/Response structs

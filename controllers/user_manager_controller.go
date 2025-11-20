@@ -23,7 +23,7 @@ func NewUserManagerController(db *gorm.DB) *UserManagerController {
 
 // GetUsers godoc
 // @Summary Get all users
-// @Description Mengambil daftar semua user dengan kemampuan pencarian opsional berdasarkan username atau nama.
+// @Description Get all users with pagination and optional search by username or name.
 // @Tags user-manager
 // @Accept json
 // @Produce json
@@ -59,13 +59,13 @@ func (ac *UserManagerController) GetUsers(c *gin.Context) {
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghitung jumlah user", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to count users", err.Error())
 		return
 	}
 
 	// Get users with pagination and order by ID ascending
 	if err := query.Order("id ASC").Preload("UserRoles.Role").Preload("UserRoles.Assigner").Limit(limit).Offset(offset).Find(&users).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal mengambil data user", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve users", err.Error())
 		return
 	}
 
@@ -84,12 +84,12 @@ func (ac *UserManagerController) GetUsers(c *gin.Context) {
 		},
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Berhasil mengambil data semua user", response)
+	utils.SuccessResponse(c, http.StatusOK, "Successfully retrieved all users", response)
 }
 
 // GetUser godoc
 // @Summary Get user by ID
-// @Description Mengambil informasi user spesifik berdasarkan ID user.
+// @Description Get specific user information by user ID.
 // @Tags user-manager
 // @Accept json
 // @Produce json
@@ -105,16 +105,16 @@ func (ac *UserManagerController) GetUser(c *gin.Context) {
 
 	var user models.User
 	if err := ac.DB.Preload("UserRoles.Role").First(&user, userID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "User tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Berhasil mengambil data user", user.ToUserResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Successfully retrieved user data", user.ToUserResponse())
 }
 
 // UpdateUserStatus godoc
 // @Summary Update user status (active/inactive)
-// @Description Mengaktifkan atau menonaktifkan status user. (hanya coordinator yang dapat mengakses)
+// @Description Activate or deactivate user status. (only coordinators can access)
 // @Tags user-manager
 // @Accept json
 // @Produce json
@@ -138,25 +138,25 @@ func (ac *UserManagerController) UpdateUserStatus(c *gin.Context) {
 
 	var user models.User
 	if err := ac.DB.First(&user, userID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "User tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found", err.Error())
 		return
 	}
 
 	user.IsActive = req.IsActive
 	if err := ac.DB.Save(&user).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal memperbarui status user", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update user status", err.Error())
 		return
 	}
 
 	// Load user with roles
 	ac.DB.Preload("UserRoles.Role").First(&user, user.ID)
 
-	utils.SuccessResponse(c, http.StatusOK, "Berhasil memperbarui status user", user.ToUserResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Successfully updated user status", user.ToUserResponse())
 }
 
 // AssignRole godoc
 // @Summary Assign role to user
-// @Description Menugaskan peran role ke user (hanya coordinator yang dapat mengakses)
+// @Description Assign role to user (only coordinators can access)
 // @Tags user-manager
 // @Accept json
 // @Produce json
@@ -181,21 +181,21 @@ func (ac *UserManagerController) AssignRole(c *gin.Context) {
 	// Find target user
 	var user models.User
 	if err := ac.DB.Preload("UserRoles.Role").First(&user, userID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "User tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found", err.Error())
 		return
 	}
 
 	// Find role
 	var role models.Role
 	if err := ac.DB.Where("name = ?", req.RoleName).First(&role).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Role tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Role not found", err.Error())
 		return
 	}
 
 	// Check if user already has this role
 	for _, userRole := range user.UserRoles {
 		if userRole.RoleID == role.ID {
-			utils.ErrorResponse(c, http.StatusConflict, "User sudah memiliki role ini", "role sudah ditugaskan sebelumnya")
+			utils.ErrorResponse(c, http.StatusConflict, "User already has this role", "role has been previously assigned")
 			return
 		}
 	}
@@ -216,14 +216,14 @@ func (ac *UserManagerController) AssignRole(c *gin.Context) {
 	// Check if current user can assign this role
 	targetRoleLevel, exists := hierarchy[req.RoleName]
 	if !exists || currentMaxLevel < targetRoleLevel {
-		utils.ErrorResponse(c, http.StatusForbidden, "Tidak memiliki izin untuk menugaskan role ini", "izin ditolak")
+		utils.ErrorResponse(c, http.StatusForbidden, "You do not have permission to assign this role", "permission denied")
 		return
 	}
 
 	// Get current user ID from context
 	currentUserID, exists := c.Get("user_id")
 	if !exists {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "User tidak terautentikasi", "user_id tidak ditemukan dalam konteks")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "User not authenticated", "user_id not found in context")
 		return
 	}
 
@@ -235,19 +235,19 @@ func (ac *UserManagerController) AssignRole(c *gin.Context) {
 	}
 
 	if err := ac.DB.Create(&userRole).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menugaskan role", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to assign role", err.Error())
 		return
 	}
 
 	// Reload user with updated roles
 	ac.DB.Preload("UserRoles.Role").First(&user, user.ID)
 
-	utils.SuccessResponse(c, http.StatusOK, "Berhasil menugaskan role ke user", user.ToUserResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Successfully assigned role to user", user.ToUserResponse())
 }
 
 // RemoveRole godoc
 // @Summary Remove role from user
-// @Description Menghapus peran role dari user (hanya coordinator yang dapat mengakses)
+// @Description Remove role from user (only coordinators can access)
 // @Tags user-manager
 // @Accept json
 // @Produce json
@@ -272,7 +272,7 @@ func (ac *UserManagerController) RemoveRole(c *gin.Context) {
 	// Find role
 	var role models.Role
 	if err := ac.DB.Where("name = ?", req.RoleName).First(&role).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Role tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Role not found", err.Error())
 		return
 	}
 
@@ -290,13 +290,13 @@ func (ac *UserManagerController) RemoveRole(c *gin.Context) {
 
 	targetRoleLevel, exists := hierarchy[req.RoleName]
 	if !exists || currentMaxLevel < targetRoleLevel {
-		utils.ErrorResponse(c, http.StatusForbidden, "Tidak memiliki izin untuk menghapus role ini", "izin ditolak")
+		utils.ErrorResponse(c, http.StatusForbidden, "You do not have permission to remove this role", "permission denied")
 		return
 	}
 
 	// Remove role
 	if err := ac.DB.Where("user_id = ? AND role_id = ?", userID, role.ID).Delete(&models.UserRole{}).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghapus role", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to remove role", err.Error())
 		return
 	}
 
@@ -304,12 +304,12 @@ func (ac *UserManagerController) RemoveRole(c *gin.Context) {
 	var user models.User
 	ac.DB.Preload("UserRoles.Role").Preload("UserRoles.Assigner").First(&user, userID)
 
-	utils.SuccessResponse(c, http.StatusOK, "Berhasil menghapus role dari user", user.ToUserResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Successfully removed role from user", user.ToUserResponse())
 }
 
 // CreateUser godoc
 // @Summary Create new user
-// @Description Membuat akun baru untuk user (hanya coordinator yang dapat mengakses)
+// @Description Create a new user account (only coordinators can access)
 // @Tags user-manager
 // @Accept json
 // @Produce json
@@ -331,21 +331,21 @@ func (ac *UserManagerController) CreateUser(c *gin.Context) {
 	// Check if user already exists
 	var existingUser models.User
 	if err := ac.DB.Where("username = ? OR email = ?", req.Username, req.Email).First(&existingUser).Error; err == nil {
-		utils.ErrorResponse(c, http.StatusConflict, "User sudah ada", "username atau email sudah digunakan")
+		utils.ErrorResponse(c, http.StatusConflict, "User already exists", "username or email already in use")
 		return
 	}
 
 	// Hash password
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal mengenkripsi password", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to encrypt password", err.Error())
 		return
 	}
 
 	// Get current user ID for audit trail
 	currentUserID, exists := c.Get("user_id")
 	if !exists {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "User tidak terautentikasi", "user_id tidak ditemukan dalam konteks")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "User not authenticated", "user_id not found in context")
 		return
 	}
 
@@ -359,7 +359,7 @@ func (ac *UserManagerController) CreateUser(c *gin.Context) {
 	}
 
 	if err := ac.DB.Create(&user).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal membuat user", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create user", err.Error())
 		return
 	}
 
@@ -380,19 +380,19 @@ func (ac *UserManagerController) CreateUser(c *gin.Context) {
 		// Check if current user can assign this role
 		targetRoleLevel, exists := hierarchy[req.InitialRole]
 		if !exists {
-			utils.ErrorResponse(c, http.StatusBadRequest, "Role tidak valid", "role tidak ditemukan")
+			utils.ErrorResponse(c, http.StatusBadRequest, "Invalid role", "role not found")
 			return
 		}
 
 		if currentMaxLevel < targetRoleLevel {
-			utils.ErrorResponse(c, http.StatusForbidden, "Tidak memiliki izin untuk menetapkan role ini", "izin ditolak")
+			utils.ErrorResponse(c, http.StatusForbidden, "You do not have permission to assign this role", "permission denied")
 			return
 		}
 
 		// Find and assign the role
 		var role models.Role
 		if err := ac.DB.Where("name = ?", req.InitialRole).First(&role).Error; err != nil {
-			utils.ErrorResponse(c, http.StatusBadRequest, "Role tidak ditemukan", err.Error())
+			utils.ErrorResponse(c, http.StatusBadRequest, "Role not found", err.Error())
 			return
 		}
 
@@ -403,7 +403,7 @@ func (ac *UserManagerController) CreateUser(c *gin.Context) {
 		}
 
 		if err := ac.DB.Create(&userRole).Error; err != nil {
-			utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menetapkan role", err.Error())
+			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to assign role", err.Error())
 			return
 		}
 	} else {
@@ -422,12 +422,12 @@ func (ac *UserManagerController) CreateUser(c *gin.Context) {
 	// Load user with roles
 	ac.DB.Preload("UserRoles.Role").Preload("UserRoles.Assigner").First(&user, user.ID)
 
-	utils.SuccessResponse(c, http.StatusCreated, "User berhasil dibuat", user.ToUserResponse())
+	utils.SuccessResponse(c, http.StatusCreated, "User successfully created", user.ToUserResponse())
 }
 
 // DeleteUser godoc
 // @Summary Remove user account
-// @Description Menghapus akun user. (hanya coordinator yang dapat mengakses)
+// @Description Delete a user account. (only coordinators can access)
 // @Tags user-manager
 // @Accept json
 // @Produce json
@@ -444,19 +444,19 @@ func (ac *UserManagerController) DeleteUser(c *gin.Context) {
 	// Find user to be deleted
 	var user models.User
 	if err := ac.DB.Preload("UserRoles.Role").First(&user, userID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "User tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found", err.Error())
 		return
 	}
 
 	// Prevent deletion of current user
 	currentUserID, exists := c.Get("user_id")
 	if !exists {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "User tidak terautentikasi", "user_id tidak ditemukan dalam konteks")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "User not authenticated", "user_id not found in context")
 		return
 	}
 
 	if user.ID == currentUserID.(uint) {
-		utils.ErrorResponse(c, http.StatusForbidden, "Tidak dapat menghapus akun sendiri", "penghapusan diri tidak diizinkan")
+		utils.ErrorResponse(c, http.StatusForbidden, "Cannot delete own account", "self-deletion not allowed")
 		return
 	}
 
@@ -482,7 +482,7 @@ func (ac *UserManagerController) DeleteUser(c *gin.Context) {
 
 	// Check if current user has permission to delete target user
 	if currentMaxLevel <= targetMaxLevel {
-		utils.ErrorResponse(c, http.StatusForbidden, "Tidak memiliki izin untuk menghapus user ini", "izin ditolak")
+		utils.ErrorResponse(c, http.StatusForbidden, "You do not have permission to delete this user", "permission denied")
 		return
 	}
 
@@ -492,29 +492,29 @@ func (ac *UserManagerController) DeleteUser(c *gin.Context) {
 	// Delete all user roles first (due to foreign key constraints)
 	if err := tx.Where("user_id = ?", user.ID).Delete(&models.UserRole{}).Error; err != nil {
 		tx.Rollback()
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghapus peran user", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete user roles", err.Error())
 		return
 	}
 
 	// Delete the user (soft delete)
 	if err := tx.Delete(&user).Error; err != nil {
 		tx.Rollback()
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghapus user", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete user", err.Error())
 		return
 	}
 
 	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal melakukan commit transaksi", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to commit transaction", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "User berhasil dihapus", nil)
+	utils.SuccessResponse(c, http.StatusOK, "User successfully deleted", nil)
 }
 
 // UpdateUserPassword godoc
 // @Summary Update user password
-// @Description Memperbarui kata sandi user (hanya coordinator yang dapat mengakses)
+// @Description Update user password (only coordinators can access)
 // @Tags user-manager
 // @Accept json
 // @Produce json
@@ -539,7 +539,7 @@ func (ac *UserManagerController) UpdateUserPassword(c *gin.Context) {
 	// Find user to be updated
 	var user models.User
 	if err := ac.DB.Preload("UserRoles.Role").First(&user, userID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "User tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found", err.Error())
 		return
 	}
 
@@ -565,21 +565,21 @@ func (ac *UserManagerController) UpdateUserPassword(c *gin.Context) {
 
 	// Check if current user has permission to update target user
 	if currentMaxLevel < targetMaxLevel {
-		utils.ErrorResponse(c, http.StatusForbidden, "Tidak memiliki izin untuk memperbarui user ini", "izin ditolak")
+		utils.ErrorResponse(c, http.StatusForbidden, "You do not have permission to update this user", "permission denied")
 		return
 	}
 
 	// Hash new password
 	hashedPassword, err := utils.HashPassword(req.NewPassword)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal mengenkripsi kata sandi", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to hash password", err.Error())
 		return
 	}
 
 	// Update password
 	user.Password = hashedPassword
 	if err := ac.DB.Save(&user).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal memperbarui kata sandi", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update password", err.Error())
 		return
 	}
 
@@ -590,12 +590,12 @@ func (ac *UserManagerController) UpdateUserPassword(c *gin.Context) {
 	// Load user with roles for response
 	ac.DB.Preload("UserRoles.Role").Preload("UserRoles.Assigner").First(&user, user.ID)
 
-	utils.SuccessResponse(c, http.StatusOK, "Kata sandi berhasil diperbarui", user.ToUserResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Password successfully updated", user.ToUserResponse())
 }
 
 // UpdateUserProfile godoc
 // @Summary Update user profile
-// @Description Memperbarui nama lengkap dan email user (hanya coordinator yang dapat mengakses)
+// @Description Update full name and email of user (only coordinators can access)
 // @Tags user-manager
 // @Accept json
 // @Produce json
@@ -621,7 +621,7 @@ func (ac *UserManagerController) UpdateUserProfile(c *gin.Context) {
 	// Find user to be updated
 	var user models.User
 	if err := ac.DB.Preload("UserRoles.Role").First(&user, userID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "User tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found", err.Error())
 		return
 	}
 
@@ -629,7 +629,7 @@ func (ac *UserManagerController) UpdateUserProfile(c *gin.Context) {
 	if req.Email != "" && req.Email != user.Email {
 		var existingUser models.User
 		if err := ac.DB.Where("email = ? AND id != ?", req.Email, user.ID).First(&existingUser).Error; err == nil {
-			utils.ErrorResponse(c, http.StatusConflict, "Email sudah digunakan", "email sudah digunakan oleh user lain")
+			utils.ErrorResponse(c, http.StatusConflict, "Email already in use", "email already used by another user")
 			return
 		}
 	}
@@ -656,7 +656,7 @@ func (ac *UserManagerController) UpdateUserProfile(c *gin.Context) {
 
 	// Check if current user has permission to update target user
 	if currentMaxLevel < targetMaxLevel {
-		utils.ErrorResponse(c, http.StatusForbidden, "Tidak memiliki izin untuk memperbarui user ini", "izin ditolak")
+		utils.ErrorResponse(c, http.StatusForbidden, "You do not have permission to update this user", "permission denied")
 		return
 	}
 
@@ -670,19 +670,19 @@ func (ac *UserManagerController) UpdateUserProfile(c *gin.Context) {
 
 	// Save changes
 	if err := ac.DB.Save(&user).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal memperbarui profil user", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update user profile", err.Error())
 		return
 	}
 
 	// Load user with roles for response
 	ac.DB.Preload("UserRoles.Role").Preload("UserRoles.Assigner").First(&user, user.ID)
 
-	utils.SuccessResponse(c, http.StatusOK, "Profil user berhasil diperbarui", user.ToUserResponse())
+	utils.SuccessResponse(c, http.StatusOK, "User profile successfully updated", user.ToUserResponse())
 }
 
 // GetRoles godoc
 // @Summary Get all roles
-// @Description Mengambil data semua role yang tersedia. (hanya coordinator yang dapat mengakses)
+// @Description Retrieve all available roles (only coordinators can access)
 // @Tags user-manager
 // @Accept json
 // @Produce json
@@ -705,7 +705,7 @@ func (ac *UserManagerController) GetRoles(c *gin.Context) {
 	ac.DB.Model(&models.Role{}).Count(&total)
 
 	if err := ac.DB.Limit(limit).Offset(offset).Find(&roles).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal mengambil data role", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve roles", err.Error())
 		return
 	}
 
@@ -724,7 +724,7 @@ func (ac *UserManagerController) GetRoles(c *gin.Context) {
 		},
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Berhasil mengambil data role", response)
+	utils.SuccessResponse(c, http.StatusOK, "Successfully retrieved roles", response)
 }
 
 // Request/Response structs

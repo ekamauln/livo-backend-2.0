@@ -23,7 +23,7 @@ func NewBoxController(db *gorm.DB) *BoxController {
 
 // GetBoxes godoc
 // @Summary Get all boxes
-// @Description Mengambil data semua box dengan pagination dan pencarian.
+// @Description Get all boxes with pagination and optional search.
 // @Tags boxes
 // @Accept json
 // @Produce json
@@ -57,13 +57,13 @@ func (bc *BoxController) GetBoxes(c *gin.Context) {
 
 	// Get total count with search filter
 	if err := query.Count(&total).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghitung jumlah box", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to count boxes", err.Error())
 		return
 	}
 
 	// Get boxes with pagination, search filter, and order by ID ascending
 	if err := query.Order("id ASC").Limit(limit).Offset(offset).Find(&boxes).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal mengambil data box", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve boxes", err.Error())
 		return
 	}
 
@@ -83,9 +83,9 @@ func (bc *BoxController) GetBoxes(c *gin.Context) {
 	}
 
 	// Build success message
-	message := "Box berhasil diambil"
+	message := "Boxes retrieved successfully"
 	if search != "" {
-		message += " (difilter berdasarkan kode atau nama: " + search + ")"
+		message += " (filtered by code or name: " + search + ")"
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, message, response)
@@ -93,7 +93,7 @@ func (bc *BoxController) GetBoxes(c *gin.Context) {
 
 // GetBox godoc
 // @Summary Get box by ID
-// @Description Mengambil data box berdasarkan ID.
+// @Description Get box by ID.
 // @Tags boxes
 // @Accept json
 // @Produce json
@@ -109,16 +109,16 @@ func (bc *BoxController) GetBox(c *gin.Context) {
 
 	var box models.Box
 	if err := bc.DB.First(&box, boxID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Box tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Box not found", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Box berhasil diambil", box.ToBoxResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Box retrieved successfully", box.ToBoxResponse())
 }
 
 // UpdateBox godoc
 // @Summary Update box
-// @Description Memperbarui informasi box.
+// @Description Update box information.
 // @Tags boxes
 // @Accept json
 // @Produce json
@@ -142,14 +142,14 @@ func (bc *BoxController) UpdateBox(c *gin.Context) {
 
 	var box models.Box
 	if err := bc.DB.First(&box, boxID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Box tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Box not found", err.Error())
 		return
 	}
 
 	// Check for duplicate box code (excluding current box)
 	var existingBox models.Box
 	if err := bc.DB.Where("code = ? AND id != ?", req.Code, boxID).First(&existingBox).Error; err == nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Kode box sudah ada", "Kode box ini sudah digunakan")
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid box code", "This box code is already in use")
 		return
 	}
 
@@ -158,16 +158,16 @@ func (bc *BoxController) UpdateBox(c *gin.Context) {
 	box.Name = req.Name
 
 	if err := bc.DB.Save(&box).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal memperbarui box", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update box", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Box berhasil diperbarui", box.ToBoxResponse())
+	utils.SuccessResponse(c, http.StatusOK, "Box updated successfully", box.ToBoxResponse())
 }
 
 // RemoveBox godoc
 // @Summary Remove box
-// @Description Menghapus data box.
+// @Description Remove box by ID.
 // @Tags boxes
 // @Accept json
 // @Produce json
@@ -183,21 +183,21 @@ func (bc *BoxController) RemoveBox(c *gin.Context) {
 
 	var box models.Box
 	if err := bc.DB.First(&box, boxID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Box tidak ditemukan", err.Error())
+		utils.ErrorResponse(c, http.StatusNotFound, "Box not found", err.Error())
 		return
 	}
 
 	if err := bc.DB.Delete(&box).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal menghapus box", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete box", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, "Box berhasil dihapus", nil)
+	utils.SuccessResponse(c, http.StatusOK, "Box deleted successfully", nil)
 }
 
 // CreateBox godoc
 // @Summary Create new box
-// @Description Membuat box baru.
+// @Description Create a new box.
 // @Tags boxes
 // @Accept json
 // @Produce json
@@ -226,17 +226,17 @@ func (bc *BoxController) CreateBox(c *gin.Context) {
 	// Check for duplicate box code
 	var existingBox models.Box
 	if err := bc.DB.Where("code = ?", req.Code).First(&existingBox).Error; err == nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Kode box sudah ada", "Kode box ini sudah digunakan")
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid box code", "This box code is already in use")
 		return
 	}
 
 	// Create a new box and return the response
 	if err := bc.DB.Create(&box).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal membuat box", err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create box", err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusCreated, "Box berhasil dibuat", box.ToBoxResponse())
+	utils.SuccessResponse(c, http.StatusCreated, "Box created successfully", box.ToBoxResponse())
 }
 
 // Request/Response structs

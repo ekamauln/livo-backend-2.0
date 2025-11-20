@@ -46,11 +46,12 @@ func main() {
 	channelController := controllers.NewChannelController(db)
 	expeditionController := controllers.NewExpeditionController(db)
 	storeController := controllers.NewStoreController(db)
+	orderController := controllers.NewOrderController(db)
 	log.Println("✓ Berhasil memuat controller")
 
 	// Setup routes
 	log.Println("🛣️  Menyiapkan rute...")
-	router := routes.SetupRoutes(cfg, authController, userManagerController, boxController, channelController, expeditionController, storeController)
+	router := routes.SetupRoutes(cfg, authController, userManagerController, boxController, channelController, expeditionController, storeController, orderController)
 	log.Println("✓ Rute berhasil dikonfigurasi")
 
 	// Build API URL from config
